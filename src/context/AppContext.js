@@ -57,20 +57,56 @@ export const AppReducer = (state, action) => {
                 ...state,
                 budget
             };
-        case 'SET_BUDGET':
-            action.type = "DONE";
-            state.budget = action.payload;
-
-            return {
-                ...state,
-            };
+            case 'SET_BUDGET':
+                console.log('action.payload >= state.ExpenseTotal', action.payload >= state.ExpenseTotal);
+                if (action.payload >= state.ExpenseTotal) {
+                    return {
+                        ...state,
+                        budget: action.payload
+                    };
+                } else {
+                    alert("You cannot reduce the budget value lower than the spending.");
+                    return {
+                        ...state,
+                    };
+                }
         case 'CHG_CURRENCY':
             action.type = "DONE";
             state.currency = action.payload;
             return {
                 ...state
-            }
-
+            };
+            case 'CHG_DEPART':
+            action.type = "DONE";
+            state.selectedDepart = action.payload;
+            return {
+                ...state
+            };
+            case 'CHG_ALLOCATION_TYPE':
+            action.type = "DONE";
+            state.allocationType = action.payload;
+            return {
+                ...state
+            };
+            case 'CHANGE_ALLOCATION':
+                console.log('object', action.payload);
+                    action.type = "DONE";
+                if(state.remainingAmnt >= Number(action.payload.cost)) {
+                    state.expenses.map((currentExp)=> {
+                        if(currentExp.name === action.payload.depart) {
+                            currentExp.cost = action.payload.cost + currentExp.cost;
+                        }
+                        return currentExp
+                    });
+                    return {
+                        ...state,
+                    };
+                } else {
+                    alert(`The value cannot exceed remaining funds ${state.currency}${state.remainingAmnt}`);
+                    return {
+                        ...state
+                    }
+                }
         default:
             return state;
     }
@@ -79,6 +115,8 @@ export const AppReducer = (state, action) => {
 // 1. Sets the initial state when the app loads
 const initialState = {
     budget: 2000,
+    remainingAmnt:0,
+    ExpenseTotal:0,
     expenses: [
         { id: "Marketing", name: 'Marketing', cost: 50 },
         { id: "Finance", name: 'Finance', cost: 300 },
@@ -86,7 +124,16 @@ const initialState = {
         { id: "Human Resource", name: 'Human Resource', cost: 40 },
         { id: "IT", name: 'IT', cost: 500 },
     ],
-    currency: '£'
+    currencies: [
+        { name: "Dollar", symbol: '$' },
+        { name: "Pound", symbol: '£' },
+        { name: "Euro", symbol: '€' },
+        { name: "Rupee", symbol: '₹' }
+    ],
+    currency: '£',
+    currencyName: 'Pound',
+    selectedDepart: '',
+    allocationType: '',
 };
 
 // 2. Creates the context this is the thing our components import and use to get the state
@@ -97,13 +144,13 @@ export const AppContext = createContext();
 export const AppProvider = (props) => {
     // 4. Sets up the app state. takes a reducer, and an initial state
     const [state, dispatch] = useReducer(AppReducer, initialState);
-    let remaining = 0;
 
     if (state.expenses) {
             const totalExpenses = state.expenses.reduce((total, item) => {
             return (total = total + item.cost);
         }, 0);
-        remaining = state.budget - totalExpenses;
+        state.remainingAmnt = state.budget - totalExpenses;
+        state.ExpenseTotal = totalExpenses
     }
 
     return (
@@ -111,9 +158,14 @@ export const AppProvider = (props) => {
             value={{
                 expenses: state.expenses,
                 budget: state.budget,
-                remaining: remaining,
+                remaining: state.remainingAmnt,
                 dispatch,
-                currency: state.currency
+                currency: state.currency,
+                ExpenseTotal: state.ExpenseTotal,
+                currencies: state.currencies,
+                currencyName: state.currencyName,
+                selectedDepart: state.selectedDepart,
+                allocationType: state.allocationType,
             }}
         >
             {props.children}
